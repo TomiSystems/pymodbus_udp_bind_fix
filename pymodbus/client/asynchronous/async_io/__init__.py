@@ -521,7 +521,7 @@ class ReconnectingAsyncioModbusUdpClient(object):
 
         self.host = None
         self.port = 0
-
+        self.source_address = source_address
         self.connected = False
         self.reset_delay()
 
@@ -879,7 +879,8 @@ def init_udp_client(proto_cls, loop, host, port, **kwargs):
     :param kwargs:
     :return:
     """
+    bindAddress = kwargs.get("bind",None)
     client = ReconnectingAsyncioModbusUdpClient(protocol_class=proto_cls,
-                                                loop=loop)
+                                                loop=loop, source_address=bindAddress)
     yield from client.start(host, port)
     return client

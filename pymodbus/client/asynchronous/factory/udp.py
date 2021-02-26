@@ -68,7 +68,8 @@ def async_io_factory(host="127.0.0.1", port=Defaults.Port, framer=None,
     from pymodbus.client.asynchronous.async_io import init_udp_client
     loop = kwargs.get("loop") or asyncio.get_event_loop()
     proto_cls = kwargs.get("proto_cls", None)
-    cor = init_udp_client(proto_cls, loop, host, port)
+    
+    cor = init_udp_client(proto_cls, loop, host, port, bind = source_address)
     if not loop.is_running():
         client = loop.run_until_complete(asyncio.gather(cor))[0]
     else:
