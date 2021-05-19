@@ -433,6 +433,7 @@ class ModbusUdpClient(BaseModbusClient):
         self.host = host
         self.port = port
         self.socket = None
+        self.source_address = kwargs.get('source_address', None)
         self.timeout = kwargs.get('timeout', None)
         BaseModbusClient.__init__(self, framer(ClientDecoder(), self), **kwargs)
 
@@ -461,6 +462,8 @@ class ModbusUdpClient(BaseModbusClient):
             family = ModbusUdpClient._get_address_family(self.host)
             self.socket = socket.socket(family, socket.SOCK_DGRAM)
             self.socket.settimeout(self.timeout)
+            if self.bind != None:
+                self.socket.bind(self.bind)
         except socket.error as ex:
             _logger.error('Unable to create udp socket %s' % ex)
             self.close()
