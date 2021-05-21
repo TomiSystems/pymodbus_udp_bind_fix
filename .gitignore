@@ -9,10 +9,12 @@ pymodbus.egg-info/
 .noseids
 *.db
 .idea/
+/pymodbus.iml
 .tox/
 doc/api/epydoc/html/
 .vscode/
 .venv
+/venv/
 __pycache__/
 pymodbus/__pycache__/
 pymodbus/client/__pycache__/
