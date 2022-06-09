@@ -72,6 +72,7 @@ class AsyncioServerTest(asynctest.TestCase):
     # Test ModbusConnectedRequestHandler
     #-----------------------------------------------------------------------#
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testStartTcpServer(self):
         ''' Test that the modbus tcp asyncio server starts correctly '''
         identity = ModbusDeviceIdentification(info={0x00: 'VendorName'})
@@ -99,6 +100,7 @@ class AsyncioServerTest(asynctest.TestCase):
             serve.assert_awaited()
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testTcpServerServeForeverTwice(self):
         ''' Call on serve_forever() twice should result in a runtime error '''
         server = yield from StartTcpServer(context=self.context,address=("127.0.0.1", 0), loop=self.loop)
@@ -112,6 +114,7 @@ class AsyncioServerTest(asynctest.TestCase):
         server.server_close()
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testTcpServerReceiveData(self):
         ''' Test data sent on socket is received by internals - doesn't not process data '''
         data = b'\x01\x00\x00\x00\x00\x06\x01\x03\x00\x00\x00\x19'
@@ -146,6 +149,7 @@ class AsyncioServerTest(asynctest.TestCase):
             server.server_close()
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testTcpServerRoundtrip(self):
         ''' Test sending and receiving data on tcp socket '''
         data = b"\x01\x00\x00\x00\x00\x06\x01\x03\x00\x00\x00\x01" # unit 1, read register
@@ -186,6 +190,7 @@ class AsyncioServerTest(asynctest.TestCase):
         server.server_close()
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testTcpServerConnectionLost(self):
         ''' Test tcp stream interruption '''
         data = b"\x01\x00\x00\x00\x00\x06\x01\x01\x00\x00\x00\x01"
@@ -211,17 +216,29 @@ class AsyncioServerTest(asynctest.TestCase):
 
         transport, protocol = yield from self.loop.create_connection(BasicClient, host='127.0.0.1', port=random_port)
         yield from step1
-        # await asyncio.sleep(1)
+        # On Windows we seem to need to give this an extra chance to finish,
+        # otherwise there ends up being an active connection at the assert.
+        yield from asyncio.sleep(0.0)
         self.assertTrue(len(server.active_connections) == 1)
 
         protocol.transport.close()  # close isn't synchronous and there's no notification that it's done
         # so we have to wait a bit
-        yield from asyncio.sleep(0.1)
-        self.assertTrue(len(server.active_connections) == 0)
+        allowed_delay = 1
+        deadline = time.monotonic() + allowed_delay
+        while time.monotonic() <= deadline:
+            yield from asyncio.sleep(0.1)
+            if len(server.active_connections) == 0:
+                break
+        else:
+            self.assertTrue(
+                len(server.active_connections) == 0,
+                msg="connections not closed within {} seconds".format(allowed_delay),
+            )
 
         server.server_close()
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testTcpServerCloseActiveConnection(self):
         ''' Test server_close() while there are active TCP connections '''
         data = b"\x01\x00\x00\x00\x00\x06\x01\x01\x00\x00\x00\x01"
@@ -246,6 +263,9 @@ class AsyncioServerTest(asynctest.TestCase):
         transport, protocol = yield from self.loop.create_connection(BasicClient, host='127.0.0.1',port=random_port)
         yield from step1
 
+        # On Windows we seem to need to give this an extra chance to finish,
+        # otherwise there ends up being an active connection at the assert.
+        yield from asyncio.sleep(0.0)
         server.server_close()
 
         # close isn't synchronous and there's no notification that it's done
@@ -254,6 +274,7 @@ class AsyncioServerTest(asynctest.TestCase):
         self.assertTrue( len(server.active_connections) == 0 )
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testTcpServerNoSlave(self):
         ''' Test unknown slave unit exception '''
         context = ModbusServerContext(slaves={0x01: self.store, 0x02: self.store  }, single=False)
@@ -290,6 +311,7 @@ class AsyncioServerTest(asynctest.TestCase):
         server.server_close()
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testTcpServerModbusError(self):
         ''' Test sending garbage data on a TCP socket should drop the connection '''
         data = b"\x01\x00\x00\x00\x00\x06\x01\x03\x00\x00\x00\x01"  # get slave 5 function 3 (holding register)
@@ -329,6 +351,7 @@ class AsyncioServerTest(asynctest.TestCase):
             server.server_close()
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testTcpServerInternalException(self):
         ''' Test sending garbage data on a TCP socket should drop the connection '''
         data = b"\x01\x00\x00\x00\x00\x06\x01\x03\x00\x00\x00\x01"  # get slave 5 function 3 (holding register)
@@ -373,6 +396,7 @@ class AsyncioServerTest(asynctest.TestCase):
     # Test ModbusTlsProtocol
     #-----------------------------------------------------------------------#
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testStartTlsServer(self):
         ''' Test that the modbus tls asyncio server starts correctly '''
         with patch.object(ssl.SSLContext, 'load_cert_chain') as mock_method:
@@ -404,6 +428,7 @@ class AsyncioServerTest(asynctest.TestCase):
                 serve.assert_awaited()
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testTlsServerServeForeverTwice(self):
         ''' Call on serve_forever() twice should result in a runtime error '''
         with patch.object(ssl.SSLContext, 'load_cert_chain') as mock_method:
@@ -423,6 +448,7 @@ class AsyncioServerTest(asynctest.TestCase):
     #-----------------------------------------------------------------------#
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testStartUdpServer(self):
         ''' Test that the modbus udp asyncio server starts correctly '''
         identity = ModbusDeviceIdentification(info={0x00: 'VendorName'})
@@ -449,6 +475,7 @@ class AsyncioServerTest(asynctest.TestCase):
             serve.assert_awaited()
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testUdpServerServeForeverClose(self):
         ''' Test StartUdpServer serve_forever() method '''
         server = yield from StartUdpServer(context=self.context,address=("127.0.0.1", 0), loop=self.loop)
@@ -465,6 +492,7 @@ class AsyncioServerTest(asynctest.TestCase):
         self.assertTrue(server.protocol.is_closing())
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testUdpServerServeForeverTwice(self):
         ''' Call on serve_forever() twice should result in a runtime error '''
         identity = ModbusDeviceIdentification(info={0x00: 'VendorName'})
@@ -480,6 +508,7 @@ class AsyncioServerTest(asynctest.TestCase):
         server.server_close()
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testUdpServerReceiveData(self):
         ''' Test that the sending data on datagram socket gets data pushed to framer '''
         server = yield from StartUdpServer(context=self.context,address=("127.0.0.1", 0),loop=self.loop)
@@ -501,6 +530,7 @@ class AsyncioServerTest(asynctest.TestCase):
             server.server_close()
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testUdpServerSendData(self):
         ''' Test that the modbus udp asyncio server correctly sends data outbound '''
         identity = ModbusDeviceIdentification(info={0x00: 'VendorName'})
@@ -543,6 +573,7 @@ class AsyncioServerTest(asynctest.TestCase):
         yield from asyncio.sleep(0.1)
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testUdpServerRoundtrip(self):
         ''' Test sending and receiving data on udp socket'''
         data = b"\x01\x00\x00\x00\x00\x06\x01\x03\x00\x00\x00\x01" # unit 1, read register
@@ -581,6 +612,7 @@ class AsyncioServerTest(asynctest.TestCase):
         server.server_close()
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testUdpServerException(self):
         ''' Test sending garbage data on a TCP socket should drop the connection '''
         garbage = b'\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF'
@@ -619,16 +651,19 @@ class AsyncioServerTest(asynctest.TestCase):
     # -----------------------------------------------------------------------#
     # Test ModbusServerFactory
     # -----------------------------------------------------------------------#
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testModbusServerFactory(self):
         ''' Test the base class for all the clients '''
         with self.assertWarns(DeprecationWarning):
             factory = ModbusServerFactory(store=None)
 
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testStopServer(self):
         with self.assertWarns(DeprecationWarning):
             StopServer()
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testTcpServerException(self):
         ''' Sending garbage data on a TCP socket should drop the connection '''
         garbage = b'\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF'
@@ -669,6 +704,7 @@ class AsyncioServerTest(asynctest.TestCase):
 
 
     @asyncio.coroutine
+    @pytest.mark.skipif(not IS_PYTHON3, reason="requires python3.4 or above")
     def testTcpServerException(self):
         ''' Sending garbage data on a TCP socket should drop the connection '''
         garbage = b'\xFF\xFF\xFF\xFF\xFF\xFF\xFF\xFF'

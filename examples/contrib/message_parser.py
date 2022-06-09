@@ -53,7 +53,7 @@ class Decoder(object):
     def decode(self, message):
         """ Attempt to decode the supplied message
 
-        :param message: The messge to decode
+        :param message: The message to decode
         """
         if IS_PYTHON3:
             value = message if self.encode else c.encode(message, 'hex_codec')
@@ -135,7 +135,7 @@ def get_options():
 
     parser.add_option("-a", "--ascii",
                       help="The indicates that the message is ascii",
-                      action="store_true", dest="ascii", default=True)
+                      action="store_true", dest="ascii", default=False)
 
     parser.add_option("-b", "--binary",
                       help="The indicates that the message is binary",
@@ -148,6 +148,9 @@ def get_options():
     parser.add_option("-t", "--transaction",
                       help="If the incoming message is in hexadecimal format",
                       action="store_true", dest="transaction", default=False)
+    parser.add_option("--framer",
+                      help="Framer to use", dest="framer", default=None,
+                      )
 
     (opt, arg) = parser.parse_args()
 
@@ -195,7 +198,7 @@ def main():
 
     if option.debug:
         try:
-            modbus_log.setLevel(logging.DEBUG)
+            log.setLevel(logging.DEBUG)
             logging.basicConfig()
         except Exception as e:
             print("Logging is not supported on this system- {}".format(e))
@@ -205,7 +208,7 @@ def main():
         'rtu':    ModbusRtuFramer,
         'binary': ModbusBinaryFramer,
         'ascii':  ModbusAsciiFramer,
-    }.get(option.parser, ModbusSocketFramer)
+    }.get(option.framer or option.parser, ModbusSocketFramer)
 
     decoder = Decoder(framer, option.ascii)
     for message in get_messages(option):

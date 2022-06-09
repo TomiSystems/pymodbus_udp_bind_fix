@@ -39,3 +39,5 @@ test/__pycache__/
 /doc/_build/
 .pytest_cache/
 **/.pymodhis
+/build/
+/dist/
